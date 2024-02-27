@@ -15,11 +15,16 @@ namespace Chains.ViewModels
         State s;
         public MainViewModel()
         {
-            s = new StateManager().CreateInitialState("Root");
+            s = new States().CreateInitialState("Root");
             s.Enter(() => Debug.WriteLine(">>Root enter action"))
              .Update(() => Debug.WriteLine(">>Root update action"))
-             .Leave(() => Debug.WriteLine(">>Root leave action"));
-            s.Active();
+             .Leave(() => Debug.WriteLine(">>Root leave action"))
+            // .If(_trValue > 5, () => )
+              .OnState("for2")
+              .Enter(() => Debug.WriteLine(">>Enter to 2 state"))
+              .Update(() => Debug.WriteLine(">>Update to 2 state"))
+              .Leave(() => Debug.WriteLine(">>Leave to 2 state"));
+            
             
         }
 
