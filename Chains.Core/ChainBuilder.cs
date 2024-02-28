@@ -150,6 +150,7 @@ namespace Chains.Core
         }
         public void Update() 
         {
+
             TState nsKey = Current.GetNextState();
             if (nsKey.Equals(Current.StateKey))
                 Current.UpdateState();
@@ -169,11 +170,32 @@ namespace Chains.Core
 
     public abstract class BaseState<TState> where TState : Enum
     {
+
+        internal protected Action OnEnterState { get; set; }
+        internal protected Action OnUpdateState { get; set; }
+        internal protected Action OnExitState { get; set; }
+
         protected BaseState(TState key) 
         {
             StateKey = key;
         }
+        /// <summary>
+        /// адрес объекта текущего состояния
+        /// </summary>
         public TState StateKey { get; private set; }
+        public List<Condition<TState>> Conditions = new List<Condition<TState>>();
+        //////////////////////////////////////////////////////////////
+        ///
+        /// 
+        /// На данное поле установлена логика перехода в другое состояние через
+        /// метод Update()
+        /// 
+        /// 
+        ///////////////////////////////////////////////////////////////
+        /// <summary>
+        /// Адрес следующего состояния
+        /// </summary>
+        public TState Next { get; set; }
         public abstract void EnterState();
         public abstract void UpdateState();
         public abstract void ExitState();
@@ -182,19 +204,23 @@ namespace Chains.Core
 
     public class State<TState> : BaseState<TState> where TState : Enum
     {
-        public State(TState key) : base(key) { }
-        public TState Next { get; set; }
-        public Action OnEnterState { get; set; }
-        public Action OnUpdateState { get; set; }
-        public Action OnExitState { get; set; }
+        public State(TState key) : base(key) { Next = key; }
+       
+      
 
-        public List<Condition<TState>> Conditions = new List<Condition<TState>>();
+   
         public override void EnterState() => OnEnterState?.Invoke();
         public override void ExitState() => OnExitState?.Invoke();
         public override void UpdateState()
         {
             OnUpdateState?.Invoke();
-
+            if(Conditions != null && Conditions.Count > 0)
+            {
+                for(int i = 0; i < Conditions.Count; i++)
+                {
+                    Conditions[i].Update();
+                }
+            }
         }
         public override TState GetNextState() => Next;
         
@@ -204,15 +230,65 @@ namespace Chains.Core
     {
         TState KeyNextState;
         public Func<bool> Predicate { get; set; }
-        public Condition(Func<bool> predicate ,TState keyNextState)
+        public BaseState<TState> State { get; set; }
+
+        public Condition(BaseState<TState> state, Func<bool> predicate ,TState keyNextState)
         {
+            State = state;
             Predicate = predicate;
             KeyNextState = keyNextState;
+            State.Conditions.Add(this);
         }
 
-
-
+        public void Update()
+        {
+            //////////////////////////////////////////////////////////
+            ///
+            /// В данном участке используется своеобразный "костыль",
+            /// Который меняет адрес следующего состояния для 
+            /// провокации смены состояния в менеджере. Использовать
+            /// такой переход можно и напрямую, с помощью 
+            /// методов расширения (см. ниже)
+            ///
+            ///////////////////////////////////////////////////////////
+            if (Predicate?.Invoke() ?? false)
+                State.To(KeyNextState);
+        }
     }
 
-
+    public static class StatesExtensions
+    {
+        public static BaseState<T> To<T>(this BaseState<T> state, T next) where T : Enum
+        {
+            state.Next = next;
+            return state;
+        }
+        public static BaseState<T> If<T>(this BaseState<T> state, Func<bool> predicate, T next) where T : Enum
+        {
+            _ = new Condition<T>(state, predicate, next);
+            return state;
+        }
+        public static BaseState<T> From<T>(this StateManager<T> manager, T key) where T : Enum
+        {
+            var s = new State<T>(key);
+            manager.Add(key, s);
+            return s;
+        }
+        public static BaseState<T> Enter<T>(this BaseState<T> state, Action action) where T : Enum
+        {   
+            (state as State<T>).OnEnterState = action;
+            return state;
+        }
+        public static BaseState<T> Update<T>(this BaseState<T> state, Action action) where T : Enum
+        {
+            (state as State<T>).OnUpdateState = action;
+            return state;
+        }
+        public static BaseState<T> Exit<T>(this BaseState<T> state, Action action) where T : Enum
+        {
+            (state as State<T>).OnExitState = action;
+            return state;
+        }
+    }
 }
+ 
