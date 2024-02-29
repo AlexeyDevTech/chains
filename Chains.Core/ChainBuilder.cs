@@ -140,7 +140,7 @@ namespace Chains.Core
 
     public abstract class StateManager<TState> where TState : Enum
     {
-        Dictionary<TState, BaseState<TState>> States { get; set; } = new Dictionary<TState, BaseState<TState>>();
+        internal Dictionary<TState, BaseState<TState>> States { get; set; } = new Dictionary<TState, BaseState<TState>>();
         public BaseState<TState> Current { get; set; }
         public bool IsTransitionState { get; set; }
         public StateManager() { }
@@ -160,20 +160,40 @@ namespace Chains.Core
         public void TransitionToState(TState state)
         {
             IsTransitionState = true;
+            Current.Next = Current.StateKey;
             Current.ExitState();
             Current = States[state];
             Current.EnterState();
             IsTransitionState = false;
         }
         internal void Add(TState key, BaseState<TState> State) => States.Add(key, State);
+
+
     }
+
+    public class BaseStateManager<TState> : StateManager<TState> where TState : Enum { }
 
     public abstract class BaseState<TState> where TState : Enum
     {
+        private TState _next;
 
-        internal protected Action OnEnterState { get; set; }
-        internal protected Action OnUpdateState { get; set; }
-        internal protected Action OnExitState { get; set; }
+
+        
+        internal protected Action<BaseState<TState>> OnEnterState { get; set; }
+        internal protected Action<BaseState<TState>> OnUpdateState { get; set; }
+        internal protected Action<BaseState<TState>> OnExitState { get; set; }
+        public TState Next {
+            get
+            {
+                return _next;
+            }
+            set
+            {
+                _next = value;
+                
+            }
+        
+        }
 
         protected BaseState(TState key) 
         {
@@ -184,6 +204,8 @@ namespace Chains.Core
         /// </summary>
         public TState StateKey { get; private set; }
         public List<Condition<TState>> Conditions = new List<Condition<TState>>();
+       
+
         //////////////////////////////////////////////////////////////
         ///
         /// 
@@ -195,7 +217,7 @@ namespace Chains.Core
         /// <summary>
         /// Адрес следующего состояния
         /// </summary>
-        public TState Next { get; set; }
+
         public abstract void EnterState();
         public abstract void UpdateState();
         public abstract void ExitState();
@@ -209,11 +231,11 @@ namespace Chains.Core
       
 
    
-        public override void EnterState() => OnEnterState?.Invoke();
-        public override void ExitState() => OnExitState?.Invoke();
+        public override void EnterState() => OnEnterState?.Invoke(this);
+        public override void ExitState() => OnExitState?.Invoke(this);
         public override void UpdateState()
         {
-            OnUpdateState?.Invoke();
+            OnUpdateState?.Invoke(this);
             if(Conditions != null && Conditions.Count > 0)
             {
                 for(int i = 0; i < Conditions.Count; i++)
@@ -268,27 +290,63 @@ namespace Chains.Core
             _ = new Condition<T>(state, predicate, next);
             return state;
         }
-        public static BaseState<T> From<T>(this StateManager<T> manager, T key) where T : Enum
+        /// <summary>
+        /// Возвращает объект состояния. 
+        /// Если объекта нет -- создает его и добавляет в список состояний менеджера
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="manager"></param>
+        /// <param name="key"></param>
+        /// <param name="Activate">если указано true -- устанавливает состояние как текущее активное</param>
+        /// <returns></returns>
+        public static BaseState<T> From<T>(this StateManager<T> manager, T key, bool Activate = false) where T : Enum
         {
-            var s = new State<T>(key);
-            manager.Add(key, s);
+            BaseState<T> s = null;
+            if (!manager.States.ContainsKey(key))
+            {
+                s = new State<T>(key);
+                manager.Add(key, s);
+                
+            }
+            else
+            {
+                s = manager.States[key];
+                
+            }
+            if (Activate)
+                manager.Set(s);
             return s;
+
         }
-        public static BaseState<T> Enter<T>(this BaseState<T> state, Action action) where T : Enum
+        public static BaseState<T> Enter<T>(this BaseState<T> state, Action<BaseState<T>> action) where T : Enum
         {   
             (state as State<T>).OnEnterState = action;
             return state;
         }
-        public static BaseState<T> Update<T>(this BaseState<T> state, Action action) where T : Enum
+        public static BaseState<T> Update<T>(this BaseState<T> state, Action<BaseState<T>> action) where T : Enum
         {
             (state as State<T>).OnUpdateState = action;
             return state;
         }
-        public static BaseState<T> Exit<T>(this BaseState<T> state, Action action) where T : Enum
+        public static BaseState<T> Exit<T>(this BaseState<T> state, Action<BaseState<T>> action) where T : Enum
         {
             (state as State<T>).OnExitState = action;
             return state;
         }
+        /// <summary>
+        /// Устанавливает состояние как текущее
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="manager"></param>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        public static BaseState<T> Set<T>(this StateManager<T> manager, BaseState<T> state) where T : Enum
+        {
+            manager.Current = state;
+            manager.Current.EnterState();
+            return state;
+        }
     }
+
 }
  
