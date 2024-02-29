@@ -12,6 +12,8 @@ namespace Chains.ViewModels
     public class MainViewModel : BindableBase
     {
         private double _trValue;
+        private double _oldtr;
+
         public StateManager<TStates> SManager { get; set; }
         public MainViewModel()
         {
@@ -54,9 +56,14 @@ namespace Chains.ViewModels
             get => _trValue;
             set
             {
-                SetProperty(ref _trValue, Math.Round(value, 2));
-                Debug.WriteLine($"{_trValue}");
-                SManager.Update();
+                if(_oldtr != Math.Round(value, 2))
+                {
+                    SetProperty(ref _trValue, Math.Round(value, 2));
+                    Debug.WriteLine($"{_trValue}");
+                    SManager.Update();
+                    _oldtr = Math.Round(value, 2);
+                }
+                
             }
         }
     }

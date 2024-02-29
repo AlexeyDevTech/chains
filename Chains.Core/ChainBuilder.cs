@@ -152,12 +152,11 @@ namespace Chains.Core
         }
         public void Update() 
         {
-
+            Current.UpdateState();
             TState nsKey = Current.GetNextState();
-            if (nsKey.Equals(Current.StateKey))
-                Current.UpdateState();
-            else if(!IsTransitionState)
+            if (!nsKey.Equals(Current.StateKey) && !IsTransitionState)
                 TransitionToState(nsKey);
+                
         }
         public void TransitionToState(TState state)
         {
@@ -237,14 +236,20 @@ namespace Chains.Core
         public override void ExitState() => OnExitState?.Invoke(this);
         public override void UpdateState()
         {
+            var conditionSuccess = false;
             if (Conditions != null && Conditions.Count > 0)
             {
                 for (int i = 0; i < Conditions.Count; i++)
                 {
-                    Conditions[i].Update();
+                    if (Conditions[i].Update())
+                    {
+                        conditionSuccess = true;
+                        break;
+                    }
                 }
             }
-            OnUpdateState?.Invoke(this);
+            if(!conditionSuccess)
+                OnUpdateState?.Invoke(this);
         }
         public override TState GetNextState() => Next;
         
@@ -264,7 +269,7 @@ namespace Chains.Core
             State.Conditions.Add(this);
         }
 
-        public void Update()
+        public bool Update()
         {
             //////////////////////////////////////////////////////////
             ///
@@ -276,7 +281,11 @@ namespace Chains.Core
             ///
             ///////////////////////////////////////////////////////////
             if (Predicate?.Invoke() ?? false)
+            {
                 State.To(KeyNextState);
+                return true;
+            }
+            return false;
         }
     }
 
