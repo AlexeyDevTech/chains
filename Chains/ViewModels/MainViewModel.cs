@@ -20,7 +20,9 @@ namespace Chains.ViewModels
                 .Enter(x => Debug.WriteLine(">>Idle enter action"))
                 .Update(x => Debug.WriteLine(">>Idle update action"))
                 .Exit(x => Debug.WriteLine(">>Idle exit action"))
-                .If(() => TRValue > 5, TStates.Normal);
+                .If(() => {
+                    return TRValue > 5;
+                    }, TStates.Normal);
 
             SManager.From(TStates.Normal)
                 .Enter(x => {
@@ -43,7 +45,7 @@ namespace Chains.ViewModels
                 .Enter(x => Debug.WriteLine(">>ERROR enter"))
                 .Exit(x => Debug.WriteLine(">>ERROR exit"))
                 .If(() => TRValue < 5.05, TStates.Normal);
-
+            SManager.Start();
             
         }
 

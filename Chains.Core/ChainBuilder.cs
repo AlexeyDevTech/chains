@@ -140,6 +140,8 @@ namespace Chains.Core
 
     public abstract class StateManager<TState> where TState : Enum
     {
+
+
         internal Dictionary<TState, BaseState<TState>> States { get; set; } = new Dictionary<TState, BaseState<TState>>();
         public BaseState<TState> Current { get; set; }
         public bool IsTransitionState { get; set; }
@@ -235,14 +237,14 @@ namespace Chains.Core
         public override void ExitState() => OnExitState?.Invoke(this);
         public override void UpdateState()
         {
-            OnUpdateState?.Invoke(this);
-            if(Conditions != null && Conditions.Count > 0)
+            if (Conditions != null && Conditions.Count > 0)
             {
-                for(int i = 0; i < Conditions.Count; i++)
+                for (int i = 0; i < Conditions.Count; i++)
                 {
                     Conditions[i].Update();
                 }
             }
+            OnUpdateState?.Invoke(this);
         }
         public override TState GetNextState() => Next;
         
