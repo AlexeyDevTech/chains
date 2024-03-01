@@ -5,30 +5,18 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Chains"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid >
+        Title="MainWindow" Height="600" Width="1400">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="100"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*"/>
-                <ColumnDefinition />
-            </Grid.ColumnDefinitions>
-            <Grid Grid.Column="0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="50"/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition Width="50"/>
-                </Grid.ColumnDefinitions>
-                <TextBox x:Name="Min" Grid.Column="0" Height="20" VerticalAlignment="Top" Margin="5 0"/>
-                <Slider x:Name="slider" Grid.Column="1" Minimum="{Binding Text, Mode=TwoWay, ElementName=Min}" Maximum="{Binding Text,Mode=TwoWay, ElementName=Max}" Value="{Binding TRValue}" SmallChange="1" TickFrequency="10"/>
-                <TextBox x:Name="Max" Grid.Column="2" Height="20" VerticalAlignment="Top" Margin="5 0"/>
-                <TextBlock Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0 20" FontSize="32" Text="{Binding Value, ElementName=slider}"/>
-            </Grid>
-
+        <Grid Grid.Row="0">
+            
         </Grid>
-
+        <Grid Grid.Row="1">
+            
+        </Grid>
+        
     </Grid>
 </Window>
