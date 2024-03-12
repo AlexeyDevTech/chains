@@ -1,162 +1,42 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Security;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Chains.Core
+namespace ANG24.Core.Services
 {
-
-    //public class States
-    //{
-    //    public Dictionary<string, State> StatesList { get; set; } = new Dictionary<string, State>();
-    //    public State CurrentState { get; set; }
-
-    //    //public State CreateInitialState(string name)
-    //    //{
-    //    //    var r = new State(name);
-    //    //    Root = r;
-    //    //    return r;
-    //    //}
-
-
-    //    public void Active(State state) => state.Active = true;
-    //}
-    //public class State
-    //{
-    //    private bool _active;
-
-
-    //    internal Action OnEnter { get; set; }
-    //    internal Action OnLeave { get; set; }
-    //    internal Action OnUpdate { get; set; }
-    //    internal bool Active 
-    //    { 
-    //        get
-    //        {
-    //            return _active;
-
-    //        }
-    //        set
-    //        {
-    //            _active = value;
-    //            if (value)
-    //            {
-
-    //                Enter();
-    //            }
-    //            else
-    //                Leave();
-    //        }
-    //    }
-
-    //    public string Name { get; set; } = "New State";
-    //    internal List<Condition> Conditions { get; set; }
-
-    //    public State(string Name)
-    //    {
-    //        this.Name = Name;
-    //        Conditions = new List<Condition>();
-    //    }
-
-    //    internal void AddCondition(Condition condition) => Conditions.Add(condition);
-    //    public void UpdateState()
-    //    {
-    //        for(int i = 0; i < Conditions.Count; i++)
-    //        {
-    //            Conditions[i].Update();       
-    //        }
-    //        OnUpdate?.Invoke();
-    //    }
-    //    internal void SetUpdateAction(Action action) => OnUpdate = action;
-    //    internal void SetEnterAction(Action action) => OnEnter = action;
-    //    internal void SetLeaveAction(Action action) => OnLeave = action;
-    //    internal void Enter() => OnEnter?.Invoke();
-    //    internal void Leave() => OnLeave?.Invoke();
-
-    //    public override string ToString()
-    //    {
-    //        return $"State {Name}";
-    //    }
-
-    //}
-    //public class Condition
-    //{
-    //    public Func<bool> Predicate { get; set; }
-    //    public Action Action { get; set; }
-    //    public void Update()
-    //    {
-
-    //        if (Predicate?.Invoke() ?? true)
-    //        {
-    //            Action?.Invoke();
-    //        }
-
-    //    }
-
-    //}
-
-    //public static class StateExtensions
-    //{
-    //    public static State OnState(this State parent, string Name)
-    //    {
-    //        var s = new State(Name);
-    //        return s;
-    //    }
-
-    //    public static State ToState(this State state, string Name)
-    //    {
-    //        return state;
-    //    }
-
-    //    public static State Enter(this State state, Action action)
-    //    {
-    //        state.SetEnterAction(action);
-    //        return state;
-    //    }
-    //    public static State Leave(this State state, Action action)
-    //    {
-    //        state.SetLeaveAction(action);
-    //        return state;
-    //    }
-    //    public static State Update(this State state, Action action)
-    //    {
-    //        state.SetUpdateAction(action);
-    //        return state;
-    //    }
-    //    public static State If(this State state, Func<bool> predict, Action action)
-    //    {
-    //        state.AddCondition(new Condition { Predicate = predict, Action = action });
-    //        return state;
-    //    }
-    //    public static State Active(this State state)
-    //    {
-    //        state.Active = true;
-    //        return state;
-    //    }
-
-
-    //}
-
     public abstract class StateManager<TState> where TState : Enum
     {
-
-
         internal Dictionary<TState, BaseState<TState>> States { get; set; } = new Dictionary<TState, BaseState<TState>>();
+        internal List<GlobalCondition<TState>> Conditions { get; set; } = new List<GlobalCondition<TState>>();
         public BaseState<TState> Current { get; set; }
         public bool IsTransitionState { get; set; }
         public StateManager() { }
-        public void Start() 
+        public void Start()
         {
             Current.EnterState();
         }
-        public void Update() 
+        public void Update()
         {
+            //для глобальных условий
+            var conditionSuccess = false;
+            if (Conditions != null && Conditions.Count > 0)
+            {
+                for (int i = 0; i < Conditions.Count; i++)
+                {
+                    if (Conditions[i].Update())
+                    {
+                        TransitionToState(Conditions[i].GetNext());
+                        return;
+                    }
+                }
+            }
             Current.UpdateState();
             TState nsKey = Current.GetNextState();
             if (!nsKey.Equals(Current.StateKey) && !IsTransitionState)
                 TransitionToState(nsKey);
-                
         }
         public void TransitionToState(TState state)
         {
@@ -168,8 +48,6 @@ namespace Chains.Core
             IsTransitionState = false;
         }
         internal void Add(TState key, BaseState<TState> State) => States.Add(key, State);
-
-
     }
 
     public class BaseStateManager<TState> : StateManager<TState> where TState : Enum { }
@@ -179,11 +57,12 @@ namespace Chains.Core
         private TState _next;
 
 
-        
+
         internal protected Action<BaseState<TState>> OnEnterState { get; set; }
         internal protected Action<BaseState<TState>> OnUpdateState { get; set; }
         internal protected Action<BaseState<TState>> OnExitState { get; set; }
-        public TState Next {
+        public TState Next
+        {
             get
             {
                 return _next;
@@ -191,12 +70,12 @@ namespace Chains.Core
             set
             {
                 _next = value;
-                
+
             }
-        
+
         }
 
-        protected BaseState(TState key) 
+        protected BaseState(TState key)
         {
             StateKey = key;
         }
@@ -205,7 +84,8 @@ namespace Chains.Core
         /// </summary>
         public TState StateKey { get; private set; }
         public List<Condition<TState>> Conditions = new List<Condition<TState>>();
-       
+        internal List<ICounter<int, TState>> locales { get; set; } = new List<ICounter<int, TState>>();
+
 
         //////////////////////////////////////////////////////////////
         ///
@@ -228,15 +108,27 @@ namespace Chains.Core
     public class State<TState> : BaseState<TState> where TState : Enum
     {
         public State(TState key) : base(key) { Next = key; }
-       
-      
 
-   
+
+
+
         public override void EnterState() => OnEnterState?.Invoke(this);
         public override void ExitState() => OnExitState?.Invoke(this);
         public override void UpdateState()
         {
             var conditionSuccess = false;
+            var localeSuccess = false;
+            if (locales != null && locales.Count > 0)
+            {
+                for (int i = 0; i < locales.Count; i++)
+                {
+                    if (locales[i].Update())
+                    {
+                        localeSuccess = true;
+                        break;
+                    }
+                }
+            }
             if (Conditions != null && Conditions.Count > 0)
             {
                 for (int i = 0; i < Conditions.Count; i++)
@@ -248,28 +140,33 @@ namespace Chains.Core
                     }
                 }
             }
-            if(!conditionSuccess)
+            if (!conditionSuccess || !localeSuccess)
                 OnUpdateState?.Invoke(this);
         }
         public override TState GetNextState() => Next;
-        
+
     }
 
     public class Condition<TState> where TState : Enum
     {
-        TState KeyNextState;
+        protected TState KeyNextState;
         public Func<bool> Predicate { get; set; }
         public BaseState<TState> State { get; set; }
 
-        public Condition(BaseState<TState> state, Func<bool> predicate ,TState keyNextState)
+        public Condition(BaseState<TState> state, Func<bool> predicate, TState keyNextState)
         {
             State = state;
             Predicate = predicate;
             KeyNextState = keyNextState;
             State.Conditions.Add(this);
         }
+        protected Condition(Func<bool> predicate, TState keyNextState)
+        {
+            Predicate = predicate;
+            KeyNextState = keyNextState;
+        }
 
-        public bool Update()
+        public virtual bool Update()
         {
             //////////////////////////////////////////////////////////
             ///
@@ -289,6 +186,67 @@ namespace Chains.Core
         }
     }
 
+    public class IntCounter<TState> : ICounter<int, TState> where TState : Enum
+    {
+        int startValue;
+        bool isPause = false;
+        public int Counter { get; set; }
+        public int CountTicker { get; set; }
+        public Func<int, bool> predicate { get; set; }
+        public TState StateId { get; set; }
+        public TState Next { get; set; }
+        public BaseState<TState> state { get; set; }
+
+        public IntCounter(BaseState<TState> state, int startValue, int increment, Func<int, bool> predicate, TState next)
+        {
+
+            this.state = state;
+            Counter = startValue;
+            this.startValue = startValue;
+            CountTicker = increment;
+            this.predicate = predicate;
+            Next = next;
+        }
+
+        public bool Update()
+        {
+            if (!isPause)
+                Counter += CountTicker;
+
+            if (predicate?.Invoke(Counter) ?? false)
+            {
+                state.To(Next);
+                return true;
+            }
+            return false;
+        }
+
+        public void Reset()
+        {
+            Counter = startValue;
+        }
+
+        public void Pause() => isPause = true;
+        public void Resume() => isPause = false;
+        public void Zero() => Counter = 0;
+    }
+
+    public class GlobalCondition<TState> : Condition<TState> where TState : Enum
+    {
+        public GlobalCondition(Func<bool> predicate, TState keyNextState) : base(predicate, keyNextState) { }
+
+        public override bool Update()
+        {
+            if (Predicate?.Invoke() ?? false)
+            {
+                return true;
+            }
+            else return false;
+        }
+        public TState GetNext() => KeyNextState;
+
+    }
+
     public static class StatesExtensions
     {
         public static BaseState<T> To<T>(this BaseState<T> state, T next) where T : Enum
@@ -301,6 +259,20 @@ namespace Chains.Core
             _ = new Condition<T>(state, predicate, next);
             return state;
         }
+
+        public static StateManager<T> If<T>(this StateManager<T> manager, Func<bool> predicate, T next) where T : Enum
+        {
+            var cond = new GlobalCondition<T>(predicate, next);
+            manager.Conditions.Add(cond);
+            return manager;
+        }
+
+        public static BaseState<T> While<T>(this BaseState<T> state, int startValue, int increment, Func<int, bool> predicate, T next) where T : Enum
+        {
+            state.locales.Add(new IntCounter<T>(state, startValue, increment, predicate, next));
+            return state;
+        }
+
         /// <summary>
         /// Возвращает объект состояния. 
         /// Если объекта нет -- создает его и добавляет в список состояний менеджера
@@ -317,12 +289,12 @@ namespace Chains.Core
             {
                 s = new State<T>(key);
                 manager.Add(key, s);
-                
+
             }
             else
             {
                 s = manager.States[key];
-                
+
             }
             if (Activate)
                 manager.Set(s);
@@ -330,7 +302,7 @@ namespace Chains.Core
 
         }
         public static BaseState<T> Enter<T>(this BaseState<T> state, Action<BaseState<T>> action) where T : Enum
-        {   
+        {
             (state as State<T>).OnEnterState = action;
             return state;
         }
@@ -359,5 +331,19 @@ namespace Chains.Core
         }
     }
 
+
+    public interface ICounter<TCount, TState> where TState : Enum
+    {
+        BaseState<TState> state { get; set; }
+        TCount Counter { get; set; }
+        TCount CountTicker { get; set; }
+        TState Next { get; set; }
+        Func<int, bool> predicate { get; set; }
+        bool Update();
+        void Reset();
+        void Zero();
+        void Pause();
+        void Resume();
+
+    }
 }
- 
