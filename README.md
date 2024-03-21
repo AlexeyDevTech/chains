@@ -20,4 +20,13 @@
    {
        sm.Update();
    }).Change(1000, 1000);
+
+
+ public enum TestStates
+ {
+     Idle,
+     Normal,
+ }
+
+
 ```
