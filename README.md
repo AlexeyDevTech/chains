@@ -6,11 +6,11 @@
 ```c#
    var sm = new BaseStateManager<TestStates>();
    sm.From(TestStates.Idle)
-       .Enter(x => { /*something action to enter "Idle" state*/})
-       .Update(x => {/*something action to update "Idle" state*/ })
-       .Exit(x => { /*something action to exit "Idle" state*/})
-       .If(() => true /*something predicate to transition "Normal" state*/, TestStates.Normal);
-   sm.From(TestStates.Normal);
+       .Enter(x => { /*некоторое действие после входа в "Idle" состояние*/})
+       .Update(x => {/*тело "Idle" состояния. Выполняется при вызове метода Update() "StateManager"*/ })
+       .Exit(x => { /*некоторое действие после выхода из "Idle" состояния*/})
+       .If(() => true /*некоторое условие для перехода в "Normal" состояние, указанное вторым аргументом*/, TestStates.Normal);
+   sm.From(TestStates.Normal); //создает "Normal" состояние
 
    sm.Set(TestStates.Idle); //установка начального состояния
    sm.Start(); //запуск машины
