@@ -10,8 +10,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chains", "Chains\Chains.csp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chains.Core", "Chains.Core\Chains.Core.csproj", "{2CBB9F8E-4F71-48D1-B737-D00A7143B803}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chains.PortManager", "Chains.PortManager\Chains.PortManager.csproj", "{A162A2B9-71C2-402C-8A94-4AA7FC420AE4}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,10 +24,6 @@ Global
 		{2CBB9F8E-4F71-48D1-B737-D00A7143B803}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2CBB9F8E-4F71-48D1-B737-D00A7143B803}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2CBB9F8E-4F71-48D1-B737-D00A7143B803}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A162A2B9-71C2-402C-8A94-4AA7FC420AE4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A162A2B9-71C2-402C-8A94-4AA7FC420AE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A162A2B9-71C2-402C-8A94-4AA7FC420AE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A162A2B9-71C2-402C-8A94-4AA7FC420AE4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
